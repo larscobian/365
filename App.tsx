@@ -1,0 +1,140 @@
+
+import React, { useState, useEffect } from 'react';
+import { Menu } from 'lucide-react';
+import Sidebar from './components/Sidebar';
+import Dashboard from './components/Dashboard';
+import GoalsPage from './components/GoalsPage';
+import JournalPage from './components/JournalPage';
+import MealPrepPage from './components/MealPrepPage';
+import ProjectsPage, { Project } from './components/ProjectsPage';
+import AIAssistant from './components/AIAssistant';
+import { initialEntries, JournalEntry } from './data/journal';
+
+const App: React.FC = () => {
+  const [currentView, setCurrentView] = useState<'dashboard' | 'goals' | 'journal' | 'mealprep' | 'projects'>('dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // --- Persistence Helper ---
+  const usePersistentState = <T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
+    const [state, setState] = useState<T>(() => {
+      try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : initialValue;
+      } catch (error) {
+        console.error(`Error reading localStorage key "${key}":`, error);
+        return initialValue;
+      }
+    });
+
+    useEffect(() => {
+      try {
+        localStorage.setItem(key, JSON.stringify(state));
+      } catch (error) {
+        console.error(`Error writing localStorage key "${key}":`, error);
+      }
+    }, [key, state]);
+
+    return [state, setState];
+  };
+
+  // Lifted state for Journal Entries with Persistence
+  const [journalEntries, setJournalEntries] = usePersistentState<Record<string, JournalEntry>>('journal_entries', initialEntries);
+
+  // Lifted state for Projects with Persistence
+  const [projects, setProjects] = usePersistentState<Project[]>('projects_data', [
+    {
+        id: '1',
+        title: 'Lanzamiento Website',
+        icon: '🚀',
+        updatedAt: new Date().toISOString(),
+        blocks: [
+            { id: 'b1', type: 'h1', content: 'Plan de Lanzamiento' },
+            { id: 'b2', type: 'text', content: 'Objetivo: Lanzar la nueva landing page para el Q4.' },
+            { id: 'b3', type: 'h2', content: 'Tareas Principales' },
+            { id: 'b4', type: 'todo', content: 'Comprar dominio', isChecked: true },
+            { id: 'b5', type: 'todo', content: 'Configurar SSL', isChecked: false },
+            { id: 'b6', type: 'bullet', content: 'Revisar analytics' },
+        ]
+    },
+    {
+        id: '2',
+        title: 'Ideas de Contenido',
+        icon: '💡',
+        updatedAt: new Date().toISOString(),
+        blocks: [
+            { id: 'b1', type: 'h1', content: 'Ideas YouTube Octubre' },
+            { id: 'b2', type: 'bullet', content: 'Tutorial de React' },
+            { id: 'b3', type: 'bullet', content: 'Vlog de productividad' },
+        ]
+    }
+  ]);
+
+  const handleViewChange = (view: typeof currentView) => {
+    setCurrentView(view);
+    setIsMobileMenuOpen(false); // Close mobile menu on navigation
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0f111a] text-white selection:bg-blue-500 selection:text-white flex flex-col lg:block">
+      
+      {/* Mobile Header */}
+      <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-800 bg-[#0f111a] sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <button 
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="p-2 -ml-2 text-gray-400 hover:text-white"
+            >
+                <Menu size={24} />
+            </button>
+            <span className="font-bold text-lg tracking-wide">PROYECTO <span className="font-light">365</span></span>
+          </div>
+          <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shrink-0">
+                <div className="w-4 h-4 bg-black rounded-full" />
+            </div>
+      </div>
+
+      <Sidebar 
+        currentView={currentView} 
+        onViewChange={handleViewChange}
+        isCollapsed={isSidebarCollapsed}
+        toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        isMobileOpen={isMobileMenuOpen}
+        closeMobileMenu={() => setIsMobileMenuOpen(false)}
+      />
+      
+      {/* Main Content Area - Adjusted Margins */}
+      <main 
+        className={`
+            transition-all duration-300 p-4 md:p-6 lg:p-8 min-h-[calc(100vh-60px)] lg:min-h-screen
+            lg:ml-${isSidebarCollapsed ? '20' : '64'}
+        `}
+      >
+        {currentView === 'dashboard' && (
+            <Dashboard 
+                journalEntries={journalEntries} 
+            />
+        )}
+        {currentView === 'goals' && <GoalsPage />}
+        {currentView === 'projects' && (
+            <ProjectsPage 
+                projects={projects} 
+                setProjects={setProjects} 
+            />
+        )}
+        {currentView === 'journal' && (
+            <JournalPage 
+                entries={journalEntries} 
+                setEntries={setJournalEntries} 
+            />
+        )}
+        {currentView === 'mealprep' && <MealPrepPage />}
+      </main>
+
+      {/* Global AI Assistant */}
+      <AIAssistant />
+    </div>
+  );
+};
+
+export default App;

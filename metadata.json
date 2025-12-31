@@ -1,0 +1,7 @@
+{
+  "name": "Proyecto 365 Dashboard",
+  "description": "A high-fidelity recreation of the Proyecto 365 dashboard with Gemini-powered features.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

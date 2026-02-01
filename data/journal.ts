@@ -39,18 +39,18 @@ export interface JournalEntry {
   };
 
   export const initialEntries: Record<string, JournalEntry> = {
-    '2025-10-02': {
-      date: '2025-10-02',
+    '2026-01-02': {
+      date: '2026-01-02',
       rating: 9,
       tags: ['motivado', 'agradecido'],
-      summary: 'Hoy fue un día muy productivo. Terminé el proyecto a tiempo.',
-      learning: 'La consistencia es clave.',
+      summary: 'Inicio del 2026 con toda la energía. Terminé el proyecto a tiempo.',
+      learning: 'La consistencia es clave este año.',
       bestMoment: 'El café de la mañana.',
       tomorrowGoals: 'Empezar el nuevo módulo.',
       screenTime: '3h 15m'
     },
-    '2025-10-05': {
-      date: '2025-10-05',
+    '2026-01-05': {
+      date: '2026-01-05',
       rating: 4,
       tags: ['cansado', 'con_sueno'],
       summary: 'Me sentí muy cansado y no pude entrenar.',

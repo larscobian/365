@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { 
     Trophy, TrendingUp, Briefcase, Palette, Heart
 } from 'lucide-react';
 import { HABIT_DEFINITIONS, isHabitCompleted } from '../data/habits';
 import AnnualGoals from './AnnualGoals';
+import { useUserData } from '../hooks/useFirestore';
 
 // --- Types ---
 interface GoalItem {
@@ -34,23 +35,6 @@ const ICON_MAP: Record<string, React.ElementType> = {
     'heart': Heart,
     'trophy': Trophy
 };
-
-function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
-    const [state, setState] = useState<T>(() => {
-        try {
-            const item = localStorage.getItem(key);
-            return item ? JSON.parse(item) : initialValue;
-        } catch (error) {
-            return initialValue;
-        }
-    });
-
-    useEffect(() => {
-        localStorage.setItem(key, JSON.stringify(state));
-    }, [key, state]);
-
-    return [state, setState];
-}
 
 const INITIAL_CATEGORIES: GoalCategory[] = [
     {
@@ -109,14 +93,11 @@ const INITIAL_CATEGORIES: GoalCategory[] = [
 ];
 
 const GoalsPage: React.FC = () => {
-    const [categories, setCategories] = usePersistentState<GoalCategory[]>('rpg_goals_2026_v5', INITIAL_CATEGORIES);
-
-    // Load habit history for syncing
-    const habitHistory = useMemo(() => {
-        try {
-            return JSON.parse(localStorage.getItem('habit_history_v2') || '{}');
-        } catch { return {}; }
-    }, []);
+    // Sync Goals Category with Firestore
+    const [categories, setCategories] = useUserData<GoalCategory[]>('rpg_goals_2026_v5', INITIAL_CATEGORIES);
+    
+    // Also fetch habit history to keep sync working
+    const [habitHistory] = useUserData('habit_history_v2', {});
 
     // Sync binding logic
     const syncedCategories = useMemo(() => {
@@ -129,7 +110,7 @@ const GoalsPage: React.FC = () => {
                 if (!habitDef) return item;
 
                 let syncedVal = 0;
-                Object.values(habitHistory).forEach((dayData: any) => {
+                Object.values(habitHistory as any).forEach((dayData: any) => {
                     const val = dayData[item.habitBindingId!];
                     if (isHabitCompleted(habitDef, val)) {
                         if (item.unit === 'h' && habitDef.unit === 'min') {
@@ -163,7 +144,7 @@ const GoalsPage: React.FC = () => {
                         <Trophy className="text-yellow-500" size={32} />
                         Life Command Center
                     </h1>
-                    <p className="text-gray-400">Objetivos 2026 vinculados a tus hábitos</p>
+                    <p className="text-gray-400">Objetivos 2026 vinculados a tus hábitos (Sincronizado en la nube)</p>
                 </div>
                 <div className="bg-[#1c1f2e] border border-gray-800 rounded-xl px-6 py-3 flex items-center gap-4">
                     <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Nivel General</span>

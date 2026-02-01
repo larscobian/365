@@ -1,6 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, LogOut } from 'lucide-react';
+import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { auth } from './services/firebase';
+import { useUserData } from './hooks/useFirestore';
+
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import GoalsPage from './components/GoalsPage';
@@ -11,38 +15,33 @@ import AIAssistant from './components/AIAssistant';
 import { initialEntries, JournalEntry } from './data/journal';
 
 const App: React.FC = () => {
+  const [user, setUser] = useState(auth.currentUser);
+  
+  // Autenticación Anónima Automática
+  useEffect(() => {
+    // Escuchar cambios de estado
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        if (!currentUser) {
+            // Si no hay usuario, iniciamos sesión anónima automáticamente
+            // para que Firestore funcione sin pedir credenciales visuales.
+            signInAnonymously(auth).catch((err) => {
+                console.error("Error en auth anónima:", err);
+            });
+        }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const [currentView, setCurrentView] = useState<'dashboard' | 'goals' | 'journal' | 'mealprep' | 'projects'>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // --- Persistence Helper ---
-  const usePersistentState = <T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
-    const [state, setState] = useState<T>(() => {
-      try {
-        const item = localStorage.getItem(key);
-        return item ? JSON.parse(item) : initialValue;
-      } catch (error) {
-        console.error(`Error reading localStorage key "${key}":`, error);
-        return initialValue;
-      }
-    });
 
-    useEffect(() => {
-      try {
-        localStorage.setItem(key, JSON.stringify(state));
-      } catch (error) {
-        console.error(`Error writing localStorage key "${key}":`, error);
-      }
-    }, [key, state]);
+  // --- Firestore Synced State ---
+  // Estos hooks esperarán a que el usuario anónimo esté listo
+  const [journalEntries, setJournalEntries] = useUserData<Record<string, JournalEntry>>('journal_entries', initialEntries);
 
-    return [state, setState];
-  };
-
-  // Lifted state for Journal Entries with Persistence
-  const [journalEntries, setJournalEntries] = usePersistentState<Record<string, JournalEntry>>('journal_entries', initialEntries);
-
-  // Lifted state for Projects with Persistence
-  const [projects, setProjects] = usePersistentState<Project[]>('projects_data', [
+  const [projects, setProjects] = useUserData<Project[]>('projects_data', [
     {
         id: '1',
         title: 'Lanzamiento Website',
@@ -72,7 +71,7 @@ const App: React.FC = () => {
 
   const handleViewChange = (view: typeof currentView) => {
     setCurrentView(view);
-    setIsMobileMenuOpen(false); // Close mobile menu on navigation
+    setIsMobileMenuOpen(false); 
   };
 
   return (
@@ -89,9 +88,9 @@ const App: React.FC = () => {
             </button>
             <span className="font-bold text-lg tracking-wide">PROYECTO <span className="font-light">365</span></span>
           </div>
-          <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shrink-0">
-                <div className="w-4 h-4 bg-black rounded-full" />
-            </div>
+          <div className="w-8 h-8 bg-blue-500/10 rounded-full flex items-center justify-center border border-blue-500/20">
+             <span className="text-xs font-bold text-blue-500">P</span>
+          </div>
       </div>
 
       <Sidebar 
@@ -103,13 +102,22 @@ const App: React.FC = () => {
         closeMobileMenu={() => setIsMobileMenuOpen(false)}
       />
       
-      {/* Main Content Area - Adjusted Margins */}
+      {/* Main Content Area */}
       <main 
         className={`
             transition-all duration-300 p-4 md:p-6 lg:p-8 min-h-[calc(100vh-60px)] lg:min-h-screen
             lg:ml-${isSidebarCollapsed ? '20' : '64'}
         `}
       >
+        <div className="flex justify-end lg:absolute lg:top-6 lg:right-8 mb-4 lg:mb-0 z-20">
+             <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500 hidden md:block">
+                    {user ? 'Sincronización Activa' : 'Conectando...'}
+                </span>
+                <div className={`w-2 h-2 rounded-full ${user ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-yellow-500 animate-pulse'}`} />
+             </div>
+        </div>
+
         {currentView === 'dashboard' && (
             <Dashboard 
                 journalEntries={journalEntries} 

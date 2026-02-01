@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Plus, CheckCircle2, Circle, Trash2, X, Pencil, GripVertical } from 'lucide-react';
+import { useUserData } from '../hooks/useFirestore';
 
 interface Todo {
   id: number;
@@ -11,24 +12,12 @@ interface Todo {
 interface TodoCardProps {
   title: string;
   initialTodos?: Todo[];
-  storageKey: string; // New prop for persistence
+  storageKey: string; // Used for Firestore document ID key
 }
 
 const TodoCard: React.FC<TodoCardProps> = ({ title, initialTodos = [], storageKey }) => {
-  // Initialize from localStorage if available, else use initialTodos
-  const [todos, setTodos] = useState<Todo[]>(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      return saved ? JSON.parse(saved) : initialTodos;
-    } catch (e) {
-      return initialTodos;
-    }
-  });
-
-  // Save to localStorage whenever todos change
-  useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(todos));
-  }, [todos, storageKey]);
+  // Switched to useUserData for Firestore Sync
+  const [todos, setTodos] = useUserData<Todo[]>(storageKey, initialTodos);
 
   const [isAdding, setIsAdding] = useState(false);
   const [newTodo, setNewTodo] = useState('');

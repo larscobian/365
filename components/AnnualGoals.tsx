@@ -1,8 +1,9 @@
 
 import * as React from 'react';
-import { useState, useEffect, useMemo } from 'react';
-import { Target, Plus } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Target } from 'lucide-react';
 import { HABIT_DEFINITIONS, isHabitCompleted } from '../data/habits';
+import { useUserData } from '../hooks/useFirestore';
 
 interface AnnualGoal {
   id: string;
@@ -30,15 +31,10 @@ const INITIAL_GOALS: AnnualGoal[] = [
 ];
 
 const AnnualGoals: React.FC = () => {
-  const [goals, setGoals] = useState<AnnualGoal[]>(INITIAL_GOALS);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
-
-  const habitHistory = useMemo(() => {
-    try {
-        return JSON.parse(localStorage.getItem('habit_history_v2') || '{}');
-    } catch { return {}; }
-  }, []);
+  const [goals, setGoals] = useUserData<AnnualGoal[]>('annual_goals_v1', INITIAL_GOALS);
+  
+  // Also fetch habit history from Firestore for live sync
+  const [habitHistory] = useUserData('habit_history_v2', {});
 
   const syncedGoals = useMemo(() => {
     return goals.map(goal => {
@@ -47,7 +43,7 @@ const AnnualGoals: React.FC = () => {
         if (!def) return goal;
 
         let total = 0;
-        Object.values(habitHistory).forEach((dayData: any) => {
+        Object.values(habitHistory as any).forEach((dayData: any) => {
             const val = dayData[goal.habitBindingId!];
             if (isHabitCompleted(def, val)) {
                 if (goal.unit === 'h' && def.unit === 'min') {

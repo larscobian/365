@@ -10,13 +10,13 @@ interface JournalCalendarProps {
 }
 
 const JournalCalendar: React.FC<JournalCalendarProps> = ({ entries }) => {
-  // Use Oct 2025 for consistency with the design mock/Journal Page
-  const year = 2025;
-  const month = 9; // October (0-indexed)
+  // Updated to 2026 as per request
+  const year = 2026;
+  const month = 0; // January (0-indexed) for the start of the year view, or keep as October if specifically requested, but context implies 2026 start. 
+                   // The original file had Oct 2025. I will switch to Jan 2026 or Current Month dynamically.
+                   // Since this is a static view component in the example, I'll default to Jan 2026.
 
   // Calculate offset for Monday start
-  // Oct 1 2025 is Wednesday.
-  // Mon=0, Tue=1, Wed=2. So we need 2 empty slots.
   const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7;
 
   return (
@@ -24,7 +24,7 @@ const JournalCalendar: React.FC<JournalCalendarProps> = ({ entries }) => {
       <div className="flex justify-between items-center mb-4">
         <div>
             <h3 className="text-white font-bold text-lg">Journal Overview</h3>
-            <p className="text-xs text-gray-400">Octubre 2025</p>
+            <p className="text-xs text-gray-400">Enero 2026</p>
         </div>
         <button className="text-gray-500 hover:text-white transition-colors">
             <MoreHorizontal size={20} />

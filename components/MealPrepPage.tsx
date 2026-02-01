@@ -1,24 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
-import { Plus, X, ChefHat, Trash2 } from 'lucide-react';
-
-// --- Persistence Helper ---
-function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
-  const [state, setState] = useState<T>(() => {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      return initialValue;
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(state));
-  }, [key, state]);
-
-  return [state, setState];
-}
+import React, { useState } from 'react';
+import { Plus, X, ChefHat, Trash2, RotateCcw } from 'lucide-react';
+import { useUserData } from '../hooks/useFirestore';
 
 // --- Types ---
 
@@ -64,8 +47,9 @@ const INITIAL_WEEK: DayPlan[] = [
 ];
 
 const MealPrepPage: React.FC = () => {
-  const [weekPlan, setWeekPlan] = usePersistentState<DayPlan[]>('mealprep_plan', INITIAL_WEEK);
-  const [availableFoods, setAvailableFoods] = usePersistentState<FoodItem[]>('mealprep_foods', INITIAL_FOODS);
+  // Use useUserData instead of usePersistentState
+  const [weekPlan, setWeekPlan] = useUserData<DayPlan[]>('mealprep_plan', INITIAL_WEEK);
+  const [availableFoods, setAvailableFoods] = useUserData<FoodItem[]>('mealprep_foods', INITIAL_FOODS);
   
   const [newFoodName, setNewFoodName] = useState('');
   const [isAddingFood, setIsAddingFood] = useState(false);
@@ -157,6 +141,13 @@ const MealPrepPage: React.FC = () => {
     setAvailableFoods(availableFoods.filter(f => f.id !== id));
   };
 
+  const clearWeek = () => {
+      if(window.confirm("¿Estás seguro de que quieres borrar todas las comidas de la semana?")) {
+          const emptyWeek = weekPlan.map(day => ({ ...day, meals: [] }));
+          setWeekPlan(emptyWeek);
+      }
+  };
+
   return (
     <div className="flex flex-col h-full gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <style>{`
@@ -170,12 +161,21 @@ const MealPrepPage: React.FC = () => {
       `}</style>
 
       {/* Header */}
-      <div className="text-center mb-2">
+      <div className="text-center mb-2 relative">
         <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-3">
           <ChefHat className="text-emerald-400" size={32} />
           Planificador Semanal
         </h2>
-        <p className="text-gray-400 text-sm mt-1">Arrastra ingredientes (PC) o gestiona tus comidas</p>
+        <div className="flex items-center justify-center gap-2 mt-1">
+            <p className="text-gray-400 text-sm">Arrastra ingredientes (PC) o gestiona tus comidas</p>
+            <button 
+                onClick={clearWeek} 
+                className="flex items-center gap-1 text-[10px] bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 px-2 py-1 rounded-full border border-red-500/20 transition-colors"
+                title="Borrar todo"
+            >
+                <RotateCcw size={10} /> Reiniciar
+            </button>
+        </div>
       </div>
 
       {/* Weekly Scroll Area - Horizontal scroll friendly on mobile */}
